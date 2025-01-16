@@ -1,6 +1,8 @@
 const { Schema, model } = require("mongoose");
 const crypto = require("crypto");
-const base64url = require("base64url");
+const base64url = require("base64url"); //converter to base 64
+const { Resolver } = require("did-resolver"); // did resolver for public key
+const { getResolver } = require("some-did-provider"); // did resolver for public key
 
 const credentialSubjectSchema = new Schema({
   id: {
@@ -102,9 +104,47 @@ const getVerifiableCredentialsById = (id) => {
 
 const verifyVerifiableCredentials = (vc) => {
   //TODO: we receive a verifiable credentials and we will verify it and return the result!
+  //we get the jws of the doc
+  const {
+    proof: { jws, verificationMethod },
+    ...restOfVc
+  } = vc;
+  // we call the did resolver to get the public key
+  async function resolveDid() {
+    const resolver = new Resolver(getResolver());
+    const didDocument = await resolver.resolve(verificationMethod);
+    const resolvedPublicKey = didDocument.publicKey;
+    return resolvedPublicKey;
+  }
+  const publicKey = resolveDid();
+  function verifyJWS(jws, publicKey) {
+    //we split the JWS
+    const [headerB64, payloadB64, signatureB64] = jws.split(".");
+    //Convert the parts into legible
+    const header = JSON.parse(
+      Buffer.from(headerB64, "base64").toString("utf-8")
+    );
+    const payload = JSON.parse(
+      Buffer.from(payloadB64, "base64").toString("utf-8")
+    );
+    const signature = Buffer.from(signatureB64, "base64");
+
+    //we define the data to verify (header+payload in base64) and we create the verification object with the algorithm SHA256
+    const dataToVerify = `${headerB64}.${payloadB64}`;
+    const verify = crypto.createVerify("RSA-SHA256");
+    // we update the data to verify
+    verify.update(dataToVerify);
+    verify.end();
+    // we finally check if it is valid or not
+    const isValid = verify.verify(publicKey, signature);
+    return isValid ? payload : null;
+  }
+  //we get the result.
+  const result = verifyJWS(jws, publicKey);
+  console.log(result);
 };
 
-const instantiateVerifiableCredentials = ({ identity, certificate }) => {
+const instantiateVerifiableCredentials = ({ identity, updatedProof }) => {
   const newCertificate = new VerifiableCredentialModel({
     "@context": [
       "https://www.w3.org/ns/credentials/v2",
@@ -134,6 +174,7 @@ const instantiateVerifiableCredentials = ({ identity, certificate }) => {
   const { proof, ...vcWithoutProof } = newCertificate;
   const vcSchemaString = JSON.stringify(vcWithoutProof);
   const hash = crypto.createHash("sha256").update(vcSchemaString).digest("hex");
+
   // generating the keys in case they are not created yet
   function generateKeyPair() {
     const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
@@ -155,14 +196,17 @@ const instantiateVerifiableCredentials = ({ identity, certificate }) => {
   if (!publicKey || !privateKey) {
     generateKeyPair();
   }
+
   // signing the doc with the hash and private key created.
   const signature = crypto.sign("sha256", hash, privateKey);
+
   // Creating the JWS
   // Header
   const header = {
     alg: "RS256",
     typ: "JWS",
   };
+
   // As we have everything created, we start encrypting it into a JWS file
   function generateJWS() {
     const encodedHeader = base64url.encode(Buffer.from(JSON.stringify(header)));
@@ -172,31 +216,21 @@ const instantiateVerifiableCredentials = ({ identity, certificate }) => {
     const jws = `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
     return jws;
   }
-  // we update the proof including the new jws and the date.
-  async function updateProofJWS(id, newJWS) {
-    try {
-      const currentDate = new Date().toISOString();
-      const result = await VerifiableCredentialModel.updateOne(
-        { _id: id },
-        {
-          $set: {
-            "proof.jws": newJWS,
-            "proof.created": currentDate,
-          },
-        }
-      );
 
-      console.log("Updated:", result);
-    } catch (error) {
-      console.error("Error updating JWS:", error);
-    }
-  }
+  // we update the proof including the new jws and the date and we define the filter and what
+  // to update in mongoDB to finally update the doc.
   const newJWS = generateJWS();
-  updateProofJWS(_id, newJWS);
-
+  const currentDate = new Date().toISOString();
+  const filter = { _id: identity };
+  const updatedProof = {
+    $set: {
+      "proof.jws": newJWS,
+      "proof.created": currentDate,
+    },
+  };
   // jws -> take hash code of the document (Ed25519) -> encrypt the hash code with RSA private key -> signature
   // {header: {type: "hash algorithm"}, payload -> document, signature} -> base64 encoding -> jws
-  return newCertificate.save();
+  return VerifiableCredentialModel.updateOne(filter, updatedProof);
 };
 
 exports.VerifiableCredentialModel = VerifiableCredentialModel;

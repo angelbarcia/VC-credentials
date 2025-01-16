@@ -39,9 +39,9 @@ const createApi = (callbackFun) => {
   api.post("/vc-issuer/api/v1/verify", (req, res) => {
     const vc = req.body;
     verifyVerifiableCredentials(vc)
-      .then((certificate) => {
+      .then((result) => {
         res.set("Content-Type", "application/json");
-        res.status(201).send(certificate);
+        res.status(200).send(result);
       })
       .catch((error) => {
         res.status(400).send({ error });
@@ -49,8 +49,8 @@ const createApi = (callbackFun) => {
   });
   // instantiating a VC
   api.post("/vc-issuer/api/v1/credentials", (req, res) => {
-    const { identity, certificate } = req.body;
-    instantiateVerifiableCredentials({ identity, certificate })
+    const { id, updatedProof } = req.body;
+    instantiateVerifiableCredentials({ id, updatedProof })
       .then((certificate) => {
         res.set("Content-Type", "application/json");
         res.status(201).send(certificate);
