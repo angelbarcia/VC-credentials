@@ -2,7 +2,7 @@ const {Schema, model} = require("mongoose");
 const crypto = require("crypto");
 const base64url = require("base64url"); //converter to base 64
 const {Resolver} = require("did-resolver"); // did resolver for public key
-const {getResolver} = require("@3id/did-provider"); // did resolver for public key
+//const {getResolver} = require("@3id/did-provider"); // did resolver for public key
 
 const credentialSubjectSchema = new Schema({
     id: {
