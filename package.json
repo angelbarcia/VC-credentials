@@ -5,7 +5,8 @@
     "main": "service.js",
     "scripts": {
         "service": "node --env-file=.env service.js",
-        "dev": "nodemon --env-file=.env service.js"
+        "dev": "nodemon --env-file=.env service.js",
+        "test": "jest"
     },
     "dependencies": {
         "base64url": "^3.0.1",
@@ -16,7 +17,9 @@
         "morgan": "^1.10.0",
         "nodemon": "^3.1.9",
         "did-resolver": "^4.1.0",
-        "@3id/did-provider": "^0.4.1"
+        "@3id/did-provider": "^0.4.1",
+        "jest": "^29.7.0",
+        "supertest": "^7.0.0"
     },
     "private": true
 }
