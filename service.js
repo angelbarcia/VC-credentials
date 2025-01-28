@@ -6,6 +6,6 @@ connection_to_mongodb().then((response) => {
     `Connected to the MongoDB instance running at ${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DATABASE}`
   );
   createApi(() => {
-    console.info(`API is listening on PORT ${process.env.MONGO_PORT || 8100}`);
+    console.info(`API is listening on PORT ${process.env.API_PORT || 8100}`);
   });
 });
