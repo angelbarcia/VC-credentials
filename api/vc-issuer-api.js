@@ -58,7 +58,7 @@ const createApi = (callbackFun) => {
     instantiateVerifiableCredentials({ id, updatedProof })
       .then((certificate) => {
         res.set("Content-Type", "application/json");
-        res.status(201).send(certificate);
+        res.status(200).send(certificate);
       })
       .catch((error) => {
         res.status(400).send({ error });
