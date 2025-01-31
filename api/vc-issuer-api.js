@@ -3,9 +3,9 @@ const api = express();
 const logger = require("morgan");
 const bodyParser = require("body-parser");
 const {
-  instantiateVerifiableCredentials,
-  getVerifiableCredentialsById,
-  verifyVerifiableCredentials,
+  getVcById,
+  verifyVc,
+  instantiateVc,
 } = require("../repository/mongo-repository-vc");
 
 const createApi = (callbackFun) => {
@@ -31,10 +31,10 @@ const createApi = (callbackFun) => {
 
   api.get("/vc-issuer/api/v1/credentials/:id", (req, res) => {
     const { id } = req.params;
-    getVerifiableCredentialsById(id)
-      .then((certificate) => {
+    getVcById(id)
+      .then((vc) => {
         res.set("Content-Type", "application/json");
-        res.status(200).send(certificate);
+        res.status(200).send(vc);
       })
       .catch((error) => {
         res.status(400).send(error);
@@ -43,7 +43,7 @@ const createApi = (callbackFun) => {
 
   api.post("/vc-issuer/api/v1/verify", (req, res) => {
     const vc = req.body;
-    verifyVerifiableCredentials(vc)
+    verifyVc(vc)
       .then((result) => {
         res.set("Content-Type", "application/json");
         res.status(200).send(result);
@@ -54,11 +54,11 @@ const createApi = (callbackFun) => {
   });
   // instantiating a VC
   api.post("/vc-issuer/api/v1/credentials", (req, res) => {
-    const { id, updatedProof } = req.body;
-    instantiateVerifiableCredentials({ id, updatedProof })
-      .then((certificate) => {
+    const vc = req.body;
+    instantiateVc(vc)
+      .then((signedVc) => {
         res.set("Content-Type", "application/json");
-        res.status(200).send(certificate);
+        res.status(200).send(signedVc);
       })
       .catch((error) => {
         res.status(400).send({ error });

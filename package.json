@@ -19,7 +19,8 @@
     "did-resolver": "^4.1.0",
     "@3id/did-provider": "^0.4.1",
     "jest": "^29.7.0",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "jsonwebtoken": "^9.0.0"
   },
   "private": true
 }

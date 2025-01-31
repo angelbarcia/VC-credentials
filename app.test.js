@@ -1,87 +1,94 @@
 const request = require("supertest");
+const mongoose = require("mongoose");
 const { createApi, getApi } = require("./api/vc-issuer-api");
 createApi(() => {});
 api = getApi();
+const VC = require("./models/model");
 
-describe("API Tests", () => {
-  let certificate = {
-    "@context": [
-      "https://www.w3.org/ns/credentials/v2",
-      "https://www.w3.org/ns/credentials/examples/v2",
-    ],
-    id: "https://example.com/credentials/3732",
-    type: ["VerifiableCredential", "EmailCredential"],
-    issuer: "https://deepcloudlabs.com/issuers/42",
-    issuanceDate: new Date().toString(),
+test("GET /vc-issuer/api/v1/health", async () => {
+  const response = await request(api).get("/vc-issuer/api/v1/health");
+  // Assertions
+  expect(response.statusCode).toBe(200);
+  expect(response.body).toEqual({ status: "OK" });
+  expect(response.headers["content-type"]).toMatch(/json/);
+});
+
+describe("VC Routes", () => {
+  let vcId;
+  const vc = new VC({
+    "@context": "https://www.w3.org/2018/credentials/v1",
+    type: "VerifiableCredential",
+    issuer: "did:example:123",
+    issuanceDate: new Date(),
     credentialSubject: {
-      id: "did:example:ebfeb1f712ebc6f1c276e12ec21",
-      emailAddress: "test@test.com",
-    },
-    credentialSchema: {
-      id: "https://example.com/schemas/email.json",
-      type: "JsonSchema",
+      id: "679cb52c344a449590551146",
+      nombre: "John Doe",
     },
     proof: {
       type: "Ed25519Signature2020",
-      created: "2025-01-01T12:00:00Z",
-      verificationMethod: "did:example:deepcloudlabs#rsa-public-key-1",
+      created: new Date(),
+      verificationMethod: "did:example:123#key-1",
       proofPurpose: "assertionMethod",
-      jws: "eyJhbGciOiJFZERTQSJ9..MEUCIQCY12345EXAMPLESIGNEDDATA12345rEQHgIerA",
+      proofValue: "z58DAdFfa9SkqZMVPxAQpic7ndSaynKH...",
+      jws: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
     },
-  };
-
-  let signedCertificate;
-
-  test("GET /vc-issuer/api/v1/health", () => {
-    it("should return a status of 200 and a JSON response", async () => {
-      const response = await request(api).get("/vc-issuer/api/v1/health");
-      // Assertions
-      expect(response.statusCode).toBe(200);
-      expect(response.body).toEqual({ status: "OK" });
-      expect(response.headers["content-type"]).toMatch(/json/);
-    });
   });
 
-  test("GET /vc-issuer/api/v1/credentials/:id", () => {
-    it("should return a status of 200 and a JSON response", async () => {
-      const response = await request(api).get(
-        `/vc-issuer/api/v1/credentials/${certificate.id}`
-      );
-
-      // Assertions
-      expect(response.statusCode).toBe(200);
-      expect(response.body).toHaveProperty("id", certificate.id);
+  beforeAll(async () => {
+    await mongoose.connect("mongodb://localhost:27017/vc-issuer", {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
+    const savedVC = await vc.save();
+    vcId = savedVC._id;
+  }, 10000);
+
+  afterAll(async () => {
+    await VC.deleteMany({});
   });
 
-  test("POST /vc-issuer/api/v1/verify", () => {
-    const verificationPayload = {
-      id: signedCertificate.id,
-      updatedProof: signedCertificate.updatedProof,
+  test("GET `/vc-issuer/api/v1/credentials/${vcId}`", async () => {
+    const response = await request(api).get(
+      `/vc-issuer/api/v1/credentials/${vcId}`
+    );
+    expect(response.status).toBe(200);
+    expect(response.body._id).toBe(vcId.toString());
+  });
+
+  test("POST /vc-issuer/api/v1/credentials", async () => {
+    const vc = {
+      "@context": "https://www.w3.org/2018/credentials/v1",
+      type: "VerifiableCredential",
+      issuer: "did:example:123",
+      issuanceDate: new Date(),
+      credentialSubject: {
+        id: "did:example:456",
+        nombre: "John Doe",
+      },
+      proof: {
+        type: "Ed25519Signature2020",
+        created: new Date(),
+        verificationMethod: "did:example:123#key-1",
+        proofPurpose: "assertionMethod",
+        proofValue: "z58DAdFfa9SkqZMVPxAQpic7ndSaynKH...",
+        jws: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+      },
     };
-    it("should return a status of 200 and a JSON response", async () => {
-      const response = await request(api)
-        .post("/vc-issuer/api/v1/verify")
-        .send(verificationPayload);
-      // Assertions
-      expect(response.statusCode).toBe(200);
-      expect(res.body).toHaveProperty("verified", true);
-    });
+
+    const response = await request(api)
+      .post("/vc-issuer/api/v1/credentials")
+      .send(vc);
+    expect(response.status).toBe(200);
+    expect(response.body.signedVc).toBeDefined();
   });
 
-  test("POST /vc-issuer/api/v1/credentials", () => {
-    it("should return a status of 201 and a JSON response when valid data is sent", async () => {
-      const response = await request(api)
-        .post("/vc-issuer/api/v1/credentials")
-        .send(certificate);
+  test("POST /vc-issuer/api/v1/verify", async () => {
+    const signedVc = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...";
+    const response = await request(api)
+      .post("/vc-issuer/api/v1/verify")
+      .send({ signedVc });
 
-      // Assertions
-      expect(response.statusCode).toBe(200);
-      expect(res.body).toHaveProperty("updatedProof");
-      expect(res.body.updatedProof).toHaveProperty("jws");
-      expect(res.body.updatedProof).toHaveProperty("date");
-
-      signedCertificate = res.body;
-    });
+    expect(response.status).toBe(200);
+    expect(response.body.isValid).toBe(true);
   });
 });
