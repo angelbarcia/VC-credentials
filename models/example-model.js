@@ -1,5 +1,5 @@
 const vc_example = {
-  id_: "67a07ae2a09e1eed7351d877",
+  _id: "67a07ae2a09e1eed7351d877",
   "@context": "https://www.w3.org/2018/credentials/v1",
   type: "VerifiableCredential",
   issuer: "did:example:123",
