@@ -4,9 +4,10 @@ const { vc_example } = require("../models/example-model");
 
 async function getPublicKeyFromDid() {
   try {
+    console.log(vc_example.proof.verificationMethod.split("#")[0]);
     const resolver = new Resolver(getResolver());
     const didDocument = await resolver.resolve(
-      vc_example.proof.verificationMethod,
+      vc_example.proof.verificationMethod.split("#")[0],
     );
     console.log("DID Document:", didDocument);
     if (!vc_example.verificationMethod) {
