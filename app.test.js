@@ -16,6 +16,7 @@ test("GET /vc-issuer/api/v1/health", async () => {
 describe("VC Routes", () => {
   let vcId;
   const vc = new VC({
+    id_: "67a07ae2a09e1eed7351d877",
     "@context": "https://www.w3.org/2018/credentials/v1",
     type: "VerifiableCredential",
     issuer: "did:example:123",
@@ -29,8 +30,8 @@ describe("VC Routes", () => {
       created: new Date(),
       verificationMethod: "did:example:123#key-1",
       proofPurpose: "assertionMethod",
-      proofValue: "z58DAdFfa9SkqZMVPxAQpic7ndSaynKH...",
-      jws: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+      proofValue: "z58DAdFfa9SkqZMVPxAQpic7ndSaynKH",
+      jws: "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJpYXQiOjE3MTcwNDk1MTZ9.MEUCIQDbj7tQXL5pyHcRSZVskDdw5rEFyGJpDqRVQmYXw9ayTgIgdxA5NabM9pmO7MZOTMmP1jvM3/8iyDgbTbMS3prdfJ0=",
     },
   });
 
@@ -49,12 +50,21 @@ describe("VC Routes", () => {
 
   test("GET `/vc-issuer/api/v1/credentials/${vcId}`", async () => {
     const response = await request(api).get(
-      `/vc-issuer/api/v1/credentials/${vcId}`
+      `/vc-issuer/api/v1/credentials/${vcId}`,
     );
+
     expect(response.status).toBe(200);
     expect(response.body._id).toBe(vcId.toString());
   });
+  test("POST /vc-issuer/api/v1/verify", async () => {
+    const signedVc = vc.proof.jws;
+    const response = await request(api)
+      .post("/vc-issuer/api/v1/verify")
+      .send({ signedVc });
 
+    expect(response.status).toBe(200);
+    expect(response.body.isValid).toBe(true);
+  });
   test("POST /vc-issuer/api/v1/credentials", async () => {
     const vc = {
       "@context": "https://www.w3.org/2018/credentials/v1",
@@ -70,8 +80,8 @@ describe("VC Routes", () => {
         created: new Date(),
         verificationMethod: "did:example:123#key-1",
         proofPurpose: "assertionMethod",
-        proofValue: "z58DAdFfa9SkqZMVPxAQpic7ndSaynKH...",
-        jws: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+        proofValue: "z58DAdFfa9SkqZMVPxAQpic7ndSaynKH",
+        jws: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9",
       },
     };
 
@@ -80,15 +90,5 @@ describe("VC Routes", () => {
       .send(vc);
     expect(response.status).toBe(200);
     expect(response.body.signedVc).toBeDefined();
-  });
-
-  test("POST /vc-issuer/api/v1/verify", async () => {
-    const signedVc = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...";
-    const response = await request(api)
-      .post("/vc-issuer/api/v1/verify")
-      .send({ signedVc });
-
-    expect(response.status).toBe(200);
-    expect(response.body.isValid).toBe(true);
   });
 });

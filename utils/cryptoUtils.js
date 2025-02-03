@@ -2,14 +2,14 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const base64url = require("base64url"); //converter to base 64
 
-const generateKeyPair = () => {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
+async function generateKeyPair() {
+  const { privateKey, publicKey } = await crypto.generateKeyPairSync("rsa", {
     modulusLength: 2048,
     publicKeyEncoding: { type: "spki", format: "pem" },
     privateKeyEncoding: { type: "pkcs8", format: "pem" },
   });
   return { publicKey, privateKey };
-};
+}
 
 function verifyJWS(jws, publicKey) {
   try {
