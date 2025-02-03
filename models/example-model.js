@@ -18,4 +18,4 @@ const vc_example = {
   },
 };
 
-module.exports = vc_example;
+module.exports.vc_example = vc_example;

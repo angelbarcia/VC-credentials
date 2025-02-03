@@ -21,8 +21,11 @@ function verifyJWS(jws, publicKey) {
 }
 
 function signJWS(vcSchemaString, privateKey) {
+  console.log(`signJWS(${vcSchemaString},${JSON.stringify(privateKey)})`);
   const hash = crypto.createHash("sha256").update(vcSchemaString).digest("hex");
+  console.log(`hash value is ${hash}.`);
   const signature = crypto.sign("sha256", hash, privateKey);
+  console.log("Signature is generated: " + signature);
   return signature;
 }
 

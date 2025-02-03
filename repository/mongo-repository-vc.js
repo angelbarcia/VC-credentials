@@ -1,5 +1,5 @@
 const vc_example = require("../models/example-model");
-const vc = require("../models/model");
+const vcModel = require("../models/model");
 const {
   signJWS,
   verifyJWS,
@@ -15,7 +15,7 @@ const getVcById = (id) => {
 
 const verifyVc = (vc) => {
   try {
-    if (!vc_example || !vc_example.proof) {
+    if (!vc || !vc.proof) {
       throw new Error("Invalid Verifiable Credential: Missing proof");
     }
     const {
@@ -47,21 +47,31 @@ const verifyVc = (vc) => {
   }
 };
 
-const instantiateVc = () => {
-  const { proof, ...vcWithoutProof } = vc_example;
+const instantiateVc = async (vc) => {
+  const { proof, ...vcWithoutProof } = vc;
+  console.log(vc)
+  console.log(proof)
+  console.log(vcWithoutProof)
   const vcSchemaString = JSON.stringify(vcWithoutProof);
-  const privateKey = generateKeyPair();
+  const {privateKey, publicKey} = await generateKeyPair();
+  console.log("Key Pairs is generated.")
+  console.log(privateKey)
   const signature = signJWS(vcSchemaString, privateKey);
+  console.log("Signature is generated.")
+  console.log(signature);
   const JWS = createJWS(vcSchemaString, signature);
+  console.log("JWS is generated.")
+  console.log(JWS);
   const currentDate = new Date().toISOString();
-  const filter = { _id: vc_example._id };
+  const filter = { _id: vc._id };
+  console.log(currentDate);
   const updateProof = {
     $set: {
       "proof.jws": JWS,
       "proof.created": currentDate,
     },
   };
-  return vc.updateOne(filter, updateProof);
+  return vcModel.updateOne(filter, updateProof);
   // jws -> take hash code of the document (Ed25519) -> encrypt the hash code with RSA private key -> signature
   // {header: {type: "hash algorithm"}, payload -> document, signature} -> base64 encoding -> jws
 };

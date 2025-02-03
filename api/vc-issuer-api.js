@@ -43,6 +43,7 @@ const createApi = (callbackFun) => {
 
   api.post("/vc-issuer/api/v1/verify", (req, res) => {
     const vc = req.body;
+    console.log(vc);
     verifyVc(vc)
       .then((result) => {
         res.set("Content-Type", "application/json");
@@ -55,6 +56,7 @@ const createApi = (callbackFun) => {
   // instantiating a VC
   api.post("/vc-issuer/api/v1/credentials", (req, res) => {
     const vc = req.body;
+    console.log(vc)
     instantiateVc(vc)
       .then((signedVc) => {
         res.set("Content-Type", "application/json");
