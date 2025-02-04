@@ -1,37 +1,28 @@
 const { Resolver } = require("did-resolver"); // did resolver for public key
 const { getResolver } = require("web-did-resolver");
-const { vc_example } = require("../models/example-model");
 
-async function getPublicKeyFromDid() {
+const getPublicKeyFromDid = async (did) => {
   try {
-    console.log(vc_example.proof.verificationMethod.split("#")[0]);
     const resolver = new Resolver(getResolver());
-    const didDocument = await resolver.resolve(
-      vc_example.proof.verificationMethod.split("#")[0],
-    );
-    console.log("DID Document:", didDocument);
-    if (!vc_example.verificationMethod) {
-      throw new Error("Did Document does not contain verificationMethod");
+    const didDocument = await resolver.resolve(did);
+
+    if (!didDocument || !didDocument.verificationMethod) {
+      throw new Error("Verification method not found.");
     }
-    const verificationMethods = vc_example.verificationMethod;
-    const publicKey = verificationMethods.find((method) => {
-      return (
-        method.type === "Ed25519VerificationKey2020" ||
-        method.type === "JsonWebKey2020"
-      );
-    });
+
+    const publicKey = didDocument.verificationMethod.find(
+      (vm) => vm.publicKeyBase58 || vm.publicKeyJwk,
+    );
+
     if (!publicKey) {
-      throw new Error("PublicKey not found in DID Document");
+      throw new Error("publicKey not found in the Verification Method.");
     }
-    return (
-      publicKey.publicKeyJwk ||
-      publicKey.publicKeyBase58 ||
-      publicKey.publicKeyHex
-    );
+
+    return publicKey.publicKeyBase58 || publicKey.publicKeyJwk;
   } catch (error) {
-    console.error("Error to solve DID:", error.message);
-    throw error;
+    console.error("Error to obtain the public key", error);
+    return null;
   }
-}
+};
 
 module.exports = { getPublicKeyFromDid };

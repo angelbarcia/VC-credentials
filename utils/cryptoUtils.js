@@ -1,4 +1,3 @@
-const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const base64url = require("base64url"); //converter to base 64
 
@@ -11,10 +10,20 @@ async function generateKeyPair() {
   return { publicKey, privateKey };
 }
 
-function verifyJWS(jws, publicKey) {
+function decodeJWS(jws) {
+  const [header, payload, signature] = jws.split(".");
+  const decodedHeader = JSON.parse(Buffer.from(header, "base64").toString());
+  const decodedPayload = JSON.parse(Buffer.from(payload, "base64").toString());
+  return { decodedHeader, decodedPayload, signature };
+}
+
+function verifyJWS(decodedHeader, decodedPayload, publicKey, signature) {
   try {
-    const payload = jwt.verify(jws, publicKey, { algorithms: ["RS256"] });
-    return { valid: true, payload };
+    const verify = crypto.createVerify("RSA-SHA256");
+    verify.update(`${decodedHeader}.${decodedPayload}`);
+    const isVerified = verify.verify(publicKey, signature, "base64");
+    console.log("Valid Sign:", isVerified);
+    return { valid: isVerified };
   } catch (error) {
     return { valid: false, error: error.message };
   }
@@ -46,4 +55,5 @@ module.exports = {
   generateKeyPair,
   signJWS,
   createJWS,
+  decodeJWS,
 };

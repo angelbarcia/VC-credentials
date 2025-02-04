@@ -15,11 +15,11 @@ const createApi = (callbackFun) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
       "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept"
+      "Origin, X-Requested-With, Content-Type, Accept",
     );
     res.header(
       "Access-Control-Allow-Methods",
-      "HEAD,OPTIONS,POST,PUT,PATCH,DELETE,GET"
+      "HEAD,OPTIONS,POST,PUT,PATCH,DELETE,GET",
     );
     next();
   });
@@ -34,7 +34,7 @@ const createApi = (callbackFun) => {
     getVcById(id)
       .then((vc) => {
         res.set("Content-Type", "application/json");
-        res.status(200).send(vc);
+        res.status(200).json(vc);
       })
       .catch((error) => {
         res.status(400).send(error);
@@ -43,11 +43,10 @@ const createApi = (callbackFun) => {
 
   api.post("/vc-issuer/api/v1/verify", (req, res) => {
     const vc = req.body;
-    console.log(vc);
     verifyVc(vc)
       .then((result) => {
         res.set("Content-Type", "application/json");
-        res.status(200).send(result);
+        res.status(200).json(result);
       })
       .catch((error) => {
         res.status(400).send({ error });
@@ -56,11 +55,10 @@ const createApi = (callbackFun) => {
   // instantiating a VC
   api.post("/vc-issuer/api/v1/credentials", (req, res) => {
     const vc = req.body;
-    console.log(vc)
     instantiateVc(vc)
       .then((signedVc) => {
         res.set("Content-Type", "application/json");
-        res.status(200).send(signedVc);
+        res.status(200).json(signedVc);
       })
       .catch((error) => {
         res.status(400).send({ error });

@@ -55,6 +55,10 @@ const proofSchema = new Schema({
 });
 
 const verifiableCredentialSchema = new Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    auto: true,
+  },
   "@context": {
     type: String,
     required: true,
