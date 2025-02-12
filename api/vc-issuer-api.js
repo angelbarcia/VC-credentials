@@ -71,7 +71,8 @@ const createApi = (callbackFun) => {
 
   //MICROSOFT VERIFIED ID ISSUE A CREDENTIAL + VERIFY A CREDENTIAL
   api.post("/vc-issuer/api/v1/issue-credential", (req, res) => {
-    issueVcMicrosoft(url, state, apiKey, clientName)
+    const credentialPayload = req.body;
+    issueVcMicrosoft(credentialPayload)
       .then((response) => response.json())
       .then((data) => {
         console.log("VC issued successfully");
@@ -84,6 +85,7 @@ const createApi = (callbackFun) => {
   });
 
   api.post("/vc-issuer/api/v1/verify-credential", (req, res) => {
+    const jws = req.body;
     verifyVCMicrosoft(jws)
       .then((response) => response.json())
       .then((data) => {

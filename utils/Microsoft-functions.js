@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+const microsoftModel = require("../models/microsoft-model");
 async function getAccessToken() {
   const tenantId = process.env.TENANT_ID;
   const clientId = process.env.CLIENT_ID;
@@ -23,25 +23,8 @@ async function getAccessToken() {
   return response.data.access_token;
 }
 
-async function issueVcMicrosoft(url, state, apiKey, clientName) {
+async function issueVcMicrosoft(credentialPayload) {
   const accessToken = await getAccessToken();
-  const credentialPayload = {
-    callback: {
-      url: url,
-      state: state,
-      headers: {
-        "api-key": apiKey,
-      },
-    },
-    authority: "did:web:did.deepcloudlabs.com",
-    registration: {
-      clientName: clientName,
-    },
-    type: "VerifiedEmployee",
-    manifest:
-      "https://verifiedid.did.msidentity.com/v1.0/tenants/827cfa74-3589-40e8-b6f4-2f35aab2e201/verifiableCredentials/contracts/29ddf47c-251b-2792-5614-50408c086db3/manifest",
-  };
-
   const response = await axios.post(
     "https://verifiedid.did.msidentity.com/v1.0/verifiableCredentials/createIssuanceRequest",
     credentialPayload,
